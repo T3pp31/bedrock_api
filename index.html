@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>AzureAD + API Gateway</title>
+  <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
+  <style>
+    body { visibility: hidden; }
+  </style>
+</head>
+<body>
+  <h1>チャット送信フォーム</h1>
+
+  <input type="text" id="userInput" placeholder="メッセージを入力してください" style="width: 300px;">
+  <button onclick="loginAndCallAPI()">送信</button>
+
+  <p id="response">API応答はここに表示されます</p>
+
+  <script>
+    const msalInstance = new msal.PublicClientApplication({
+      auth: {
+        clientId: "8629ce52-7bc1-43bc-bd1e-81526f06647b",
+        authority: "https://login.microsoftonline.com/a0ff080f-ce15-4520-ba64-fd5aa4b0141a",
+        redirectUri: window.location.href
+      }
+    });
+
+    let account = null;
+
+    window.addEventListener("load", async () => {
+      try {
+        const response = await msalInstance.handleRedirectPromise()
+        if (response && response.account) {
+          account = response.account
+          console.log("リダイレクト後認証成功", account)
+          document.body.style.visibility = 'visible'
+        } else {
+          const allAccounts = msalInstance.getAllAccounts()
+          if (allAccounts.length > 0) {
+            account = allAccounts[0]
+            console.log("既存アカウントを使用", account)
+            document.body.style.visibility = 'visible'
+          } else {
+            await msalInstance.loginRedirect({ scopes: ["openid", "profile"] })
+          }
+        }
+      } catch (error) {
+        console.error("AzureAD認証エラー:", error)
+        document.getElementById("response").innerText = "認証エラー: " + error.message
+      }
+    })
+
+    async function loginAndCallAPI() {
+      try {
+        const prompt = document.getElementById("userInput").value;
+
+        if (!account) {
+          const result = await msalInstance.loginPopup({ scopes: ["openid", "profile"] });
+          account = result.account;
+        }
+
+        const tokenResult = await msalInstance.acquireTokenSilent({
+          scopes: ["openid", "profile"],
+          account: account
+        });
+
+        const token = tokenResult.idToken;
+
+        const response = await fetch("https://rzmzyzitmb.execute-api.ap-northeast-1.amazonaws.com/v1/chat", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ prompt: prompt })
+        });
+
+        const data = await response.json();
+        console.log("API応答:", data);
+
+        document.getElementById("response").innerText = "API応答: " + JSON.stringify(data);
+
+      } catch (error) {
+        console.error("エラー:", error);
+        document.getElementById("response").innerText = "エラー: " + error.message;
+      }
+    }
+  </script>
+</body>
+</html>
