@@ -245,116 +245,6 @@
         max-width: 85%;
       }
     }
-    .file-upload-section {
-      padding: 10px 20px;
-      background: #f8f9fa;
-      border-top: 1px solid #e9ecef;
-      display: none;
-    }
-
-    .file-upload-section.show {
-      display: block;
-    }
-
-    .uploaded-files {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .file-preview {
-      position: relative;
-      max-width: 150px;
-      background: white;
-      border-radius: 8px;
-      padding: 8px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-
-    .file-preview img {
-      max-width: 100%;
-      max-height: 100px;
-      border-radius: 4px;
-    }
-
-    .file-preview .file-info {
-      font-size: 0.8rem;
-      color: #666;
-      margin-top: 5px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .file-preview .remove-file {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      background: rgba(255, 255, 255, 0.9);
-      border: none;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-    }
-
-    .file-preview .remove-file:hover {
-      background: #ff4444;
-      color: white;
-    }
-
-    .file-input-wrapper {
-      position: relative;
-      display: inline-block;
-    }
-
-    .file-input {
-      display: none;
-    }
-
-    .file-button {
-      padding: 8px 15px;
-      background: white;
-      border: 2px solid #667eea;
-      border-radius: 20px;
-      color: #667eea;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.3s;
-    }
-
-    .file-button:hover {
-      background: #667eea;
-      color: white;
-    }
-
-    .attach-button {
-      padding: 10px;
-      background: white;
-      border: 2px solid #e9ecef;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s;
-    }
-
-    .attach-button:hover {
-      border-color: #667eea;
-      background: #f8f9fa;
-    }
-
-    .attach-button svg {
-      width: 20px;
-      height: 20px;
-      fill: #667eea;
-    }
   </style>
 </head>
 <body>
@@ -370,7 +260,7 @@
     
     <div class="chat-messages" id="chatMessages">
       <div class="message bot">
-        こんにちは！テキスト、画像、PDF、Office文書などをアップロードして質問できます。
+        こんにちは！何かお手伝いできることはありますか？
       </div>
     </div>
 
@@ -380,29 +270,7 @@
       <span></span>
     </div>
     
-    <div class="file-upload-section" id="fileUploadSection">
-      <div class="uploaded-files" id="uploadedFiles"></div>
-      <div class="file-input-wrapper">
-        <input 
-          type="file" 
-          id="fileInput" 
-          class="file-input" 
-          multiple
-          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,.html"
-          onchange="handleFileSelect(event)"
-        >
-        <label for="fileInput" class="file-button">
-          ファイルを選択
-        </label>
-      </div>
-    </div>
-    
     <div class="chat-input-container">
-      <button class="attach-button" onclick="toggleFileUpload()">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-          <path d="M21.586 10.461l-10.05 10.075c-1.95 1.949-5.122 1.949-7.071 0s-1.95-5.122 0-7.072l10.628-10.585c1.17-1.17 3.073-1.17 4.243 0 1.169 1.17 1.17 3.072 0 4.242l-8.507 8.464c-.39.39-1.024.39-1.414 0s-.39-1.024 0-1.414l7.093-7.05-1.415-1.414-7.093 7.049c-1.172 1.172-1.171 3.073 0 4.244s3.071 1.171 4.242 0l8.507-8.464c1.95-1.95 1.95-5.122 0-7.071-1.95-1.95-5.122-1.95-7.071 0l-10.629 10.585c-2.73 2.73-2.73 7.17 0 9.9s7.169 2.729 9.899 0l10.05-10.075-1.414-1.414z"/>
-        </svg>
-      </button>
       <input 
         type="text" 
         id="userInput" 
@@ -417,8 +285,6 @@
   </div>
 
   <script>
-    let uploadedFilesData = [];
-
     const msalInstance = new msal.PublicClientApplication({
       auth: {
         clientId: "8629ce52-7bc1-43bc-bd1e-81526f06647b",
@@ -460,131 +326,6 @@
       document.getElementById("userInput").focus();
     }
 
-    function toggleFileUpload() {
-      const section = document.getElementById("fileUploadSection");
-      section.classList.toggle("show");
-    }
-
-    function handleFileSelect(event) {
-      const files = event.target.files;
-      for (let file of files) {
-        processFile(file);
-      }
-      event.target.value = ''; // Reset input
-    }
-
-    function processFile(file) {
-      const maxImageSize = 3.75 * 1024 * 1024; // 3.75MB
-      const maxDocSize = 4.5 * 1024 * 1024; // 4.5MB
-      
-      // ファイルタイプの判定
-      let fileType = '';
-      let mediaType = file.type;
-      
-      if (file.type.startsWith('image/')) {
-        fileType = 'image';
-        if (file.size > maxImageSize) {
-          alert(`画像ファイル「${file.name}」が3.75MBを超えています`);
-          return;
-        }
-      } else {
-        fileType = 'document';
-        if (file.size > maxDocSize) {
-          alert(`ドキュメント「${file.name}」が4.5MBを超えています`);
-          return;
-        }
-        // MIMEタイプの正規化
-        if (file.name.endsWith('.pdf')) mediaType = 'application/pdf';
-        else if (file.name.endsWith('.csv')) mediaType = 'text/csv';
-        else if (file.name.endsWith('.doc')) mediaType = 'application/msword';
-        else if (file.name.endsWith('.docx')) mediaType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        else if (file.name.endsWith('.xls')) mediaType = 'application/vnd.ms-excel';
-        else if (file.name.endsWith('.xlsx')) mediaType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-        else if (file.name.endsWith('.txt')) mediaType = 'text/plain';
-        else if (file.name.endsWith('.md')) mediaType = 'text/markdown';
-        else if (file.name.endsWith('.html')) mediaType = 'text/html';
-      }
-      
-      // 制限チェック
-      const imageCount = uploadedFilesData.filter(f => f.type === 'image').length;
-      const docCount = uploadedFilesData.filter(f => f.type === 'document').length;
-      
-      if (fileType === 'image' && imageCount >= 20) {
-        alert('画像は最大20枚までアップロード可能です');
-        return;
-      }
-      if (fileType === 'document' && docCount >= 5) {
-        alert('ドキュメントは最大5ファイルまでアップロード可能です');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const base64Data = e.target.result.split(',')[1]; // Remove data:xxx;base64, prefix
-        const fileData = {
-          type: fileType,
-          media_type: mediaType,
-          data: base64Data,
-          name: file.name,
-          displayUrl: fileType === 'image' ? e.target.result : null
-        };
-        
-        uploadedFilesData.push(fileData);
-        displayFilePreview(fileData, uploadedFilesData.length - 1);
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function displayFilePreview(fileData, index) {
-      const container = document.getElementById("uploadedFiles");
-      const preview = document.createElement("div");
-      preview.className = "file-preview";
-      preview.dataset.index = index;
-      
-      let content = '';
-      if (fileData.type === 'image' && fileData.displayUrl) {
-        content = `<img src="${fileData.displayUrl}" alt="${fileData.name}">`;
-      } else {
-        const icon = getFileIcon(fileData.media_type);
-        content = `<div style="text-align: center; padding: 20px;">${icon}</div>`;
-      }
-      
-      preview.innerHTML = `
-        ${content}
-        <div class="file-info">${fileData.name}</div>
-        <button class="remove-file" onclick="removeFile(${index})">×</button>
-      `;
-      
-      container.appendChild(preview);
-      document.getElementById("fileUploadSection").classList.add("show");
-    }
-
-    function getFileIcon(mediaType) {
-      if (mediaType.includes('pdf')) return '📄 PDF';
-      if (mediaType.includes('word')) return '📝 Word';
-      if (mediaType.includes('excel')) return '📊 Excel';
-      if (mediaType.includes('csv')) return '📊 CSV';
-      if (mediaType.includes('html')) return '🌐 HTML';
-      if (mediaType.includes('text') || mediaType.includes('markdown')) return '📝 Text';
-      return '📎 File';
-    }
-
-    function removeFile(index) {
-      uploadedFilesData.splice(index, 1);
-      
-      // Re-render all previews
-      const container = document.getElementById("uploadedFiles");
-      container.innerHTML = '';
-      
-      uploadedFilesData.forEach((fileData, idx) => {
-        displayFilePreview(fileData, idx);
-      });
-      
-      if (uploadedFilesData.length === 0) {
-        document.getElementById("fileUploadSection").classList.remove("show");
-      }
-    }
-
     function handleKeyPress(event) {
       if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
@@ -621,18 +362,10 @@
       const sendButton = document.getElementById("sendButton");
       const prompt = input.value.trim();
       
-      if (!prompt && uploadedFilesData.length === 0) {
-        alert('メッセージを入力するか、ファイルをアップロードしてください');
-        return;
-      }
+      if (!prompt) return;
 
       // ユーザーメッセージを追加
-      let userMessage = prompt;
-      if (uploadedFilesData.length > 0) {
-        const fileNames = uploadedFilesData.map(f => f.name).join(', ');
-        userMessage = `${prompt}${prompt ? '\n' : ''}📎 添付: ${fileNames}`;
-      }
-      addMessage(userMessage, "user");
+      addMessage(prompt, "user");
       
       // 入力をクリアして無効化
       input.value = "";
@@ -655,30 +388,14 @@
 
         const token = tokenResult.idToken;
 
-        // ファイルデータの準備（displayUrlを除外）
-        const filesForAPI = uploadedFilesData.map(f => ({
-          type: f.type,
-          media_type: f.media_type,
-          data: f.data,
-          name: f.name
-        }));
-
         const response = await fetch("https://rzmzyzitmb.execute-api.ap-northeast-1.amazonaws.com/v1/chat", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ 
-            prompt: prompt || '',
-            files: filesForAPI
-          })
+          body: JSON.stringify({ prompt: prompt })
         });
-
-        // ファイルをクリア
-        uploadedFilesData = [];
-        document.getElementById("uploadedFiles").innerHTML = '';
-        document.getElementById("fileUploadSection").classList.remove("show");
 
         const data = await response.json();
         console.log("API応答:", data);
