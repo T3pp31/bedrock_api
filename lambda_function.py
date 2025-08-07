@@ -5,7 +5,8 @@ import boto3
 # Bedrock クライアントを初期化
 bedrock = boto3.client('bedrock-runtime')
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "apac.anthropic.claude-sonnet-4-20250514-v1:0")  # モデルIDまたは推論プロファイルARN
-GUARDRAIL_ID = os.environ.get("GUARDRAIL_ID")
+GUARDRAIL_ID = os.environ.get("GUARDRAIL_ID")  # 例: "apac.guardrail.v1:0" または "gr-xxxxx"
+GUARDRAIL_VERSION = os.environ.get("GUARDRAIL_VERSION", "DRAFT")  # Guardrailバージョン（"DRAFT"または"1","2"等）
 
 def lambda_handler(event, context):
     """
@@ -31,32 +32,39 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "環境変数 BEDROCK_MODEL_ID に推論プロファイル ARN を設定してください"})
         }
     # Bedrock メッセージAPIを使用してチャットモデルを呼び出し
+    # Guardrail使用時も通常のmessages形式を使用
     messages = [
-        {"role": "user", "content": prompt}
+        {
+            "role": "user", 
+            "content": [
+                {
+                    "type": "text",
+                    "text": prompt
+                }
+            ]
+        }
     ]
-    # Guardrail有効時はpayloadのトップレベルに"input"キーが必要
-    if GUARDRAIL_ID:
-        payload = {
-            "input": {
-                "messages": messages,
-                "max_tokens": 1000,
-                "anthropic_version": "bedrock-2023-05-31"
-            }
-        }
-    else:
-        payload = {
-            "messages": messages,
-            "max_tokens": 1000,
-            "anthropic_version": "bedrock-2023-05-31"
-        }
+    
+    payload = {
+        "messages": messages,
+        "max_tokens": 1000,
+        "anthropic_version": "bedrock-2023-05-31"
+    }
     try:
-        response = bedrock.invoke_model(
-            modelId=MODEL_ID,
-            contentType='application/json',
-            accept='application/json',
-            guardrailIdentifier=GUARDRAIL_ID,
-            body=json.dumps(payload)
-        )
+        # Guardrailの有無に応じてパラメータを構築
+        invoke_params = {
+            "modelId": MODEL_ID,
+            "contentType": 'application/json',
+            "accept": 'application/json',
+            "body": json.dumps(payload)
+        }
+        
+        # Guardrailが設定されている場合はパラメータを追加
+        if GUARDRAIL_ID:
+            invoke_params["guardrailIdentifier"] = GUARDRAIL_ID
+            invoke_params["guardrailVersion"] = GUARDRAIL_VERSION
+        
+        response = bedrock.invoke_model(**invoke_params)
     except Exception as e:
         # エラー内容を詳細に返す
         print("Bedrock API error:", str(e))
