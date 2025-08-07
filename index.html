@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Chat - AzureAD + API Gateway</title>
   <script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -89,6 +90,67 @@
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       border-bottom-left-radius: 5px;
     }
+
+    /* Markdown styles */
+    .message.bot h1 { font-size: 1.5rem; margin: 0.5rem 0; }
+    .message.bot h2 { font-size: 1.3rem; margin: 0.5rem 0; }
+    .message.bot h3 { font-size: 1.1rem; margin: 0.5rem 0; }
+    .message.bot h4, .message.bot h5, .message.bot h6 { font-size: 1rem; margin: 0.5rem 0; }
+    .message.bot p { margin: 0.5rem 0; }
+    .message.bot ul, .message.bot ol { margin: 0.5rem 0; padding-left: 1.5rem; }
+    .message.bot li { margin: 0.25rem 0; }
+    .message.bot code {
+      background: #f4f4f4;
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+    .message.bot pre {
+      background: #f4f4f4;
+      padding: 0.75rem;
+      border-radius: 5px;
+      overflow-x: auto;
+      margin: 0.5rem 0;
+    }
+    .message.bot pre code {
+      background: none;
+      padding: 0;
+    }
+    .message.bot blockquote {
+      border-left: 3px solid #ddd;
+      padding-left: 1rem;
+      margin: 0.5rem 0;
+      color: #666;
+    }
+    .message.bot table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 0.5rem 0;
+    }
+    .message.bot th, .message.bot td {
+      border: 1px solid #ddd;
+      padding: 0.5rem;
+      text-align: left;
+    }
+    .message.bot th {
+      background: #f4f4f4;
+      font-weight: bold;
+    }
+    .message.bot a {
+      color: #667eea;
+      text-decoration: none;
+    }
+    .message.bot a:hover {
+      text-decoration: underline;
+    }
+    .message.bot hr {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 1rem 0;
+    }
+    .message.bot strong { font-weight: 600; }
+    .message.bot em { font-style: italic; }
 
     .message.error {
       align-self: center;
@@ -596,7 +658,22 @@
       const messagesContainer = document.getElementById("chatMessages");
       const messageDiv = document.createElement("div");
       messageDiv.className = `message ${type}`;
-      messageDiv.textContent = text;
+      
+      // botメッセージの場合はMarkdownをレンダリング
+      if (type === "bot") {
+        // Markdownをパース
+        const htmlContent = marked.parse(text, {
+          breaks: true,  // 改行を<br>に変換
+          gfm: true,     // GitHub Flavored Markdown
+          headerIds: false,
+          mangle: false
+        });
+        messageDiv.innerHTML = htmlContent;
+      } else {
+        // userとerrorメッセージはテキストのまま
+        messageDiv.textContent = text;
+      }
+      
       messagesContainer.appendChild(messageDiv);
       
       // スクロールを最下部に移動
